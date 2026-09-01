@@ -1,0 +1,7 @@
+{"id": 1, "query": "What is the capital of France?", "expected_difficulty": "easy"}
+{"id": 2, "query": "What's 12 x 8?", "expected_difficulty": "easy"}
+{"id": 3, "query": "Explain why the sky is blue in simple terms.", "expected_difficulty": "medium"}
+{"id": 4, "query": "Compare the pros and cons of remote work versus office work.", "expected_difficulty": "medium"}
+{"id": 5, "query": "Prove that the square root of 2 is irrational.", "expected_difficulty": "hard"}
+{"id": 6, "query": "Write a Python function to detect cycles in a directed graph, and explain its time complexity.", "expected_difficulty": "hard"}
+{"id": 7, "query": "What is the capital of France?", "expected_difficulty": "easy"}

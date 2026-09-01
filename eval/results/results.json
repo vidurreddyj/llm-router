@@ -1,0 +1,33 @@
+[
+  {
+    "condition": "always_cheap",
+    "total_cost_usd": 0.0044,
+    "avg_latency_s": 5.137,
+    "avg_quality": 0.771,
+    "n": 7
+  },
+  {
+    "condition": "always_strong",
+    "total_cost_usd": 0.00106,
+    "avg_latency_s": 5.303,
+    "avg_quality": 0.6,
+    "n": 7
+  },
+  {
+    "condition": "router",
+    "total_cost_usd": 0.00084,
+    "avg_latency_s": 3.641,
+    "avg_quality": 0.571,
+    "n": 7,
+    "routed_to_cheap": 3,
+    "routed_to_strong": 3,
+    "cache_hits": 1,
+    "escalations": 0,
+    "cache_stats": {
+      "hits": 1,
+      "misses": 6,
+      "hit_rate": 0.14285714285714285,
+      "entries": 6
+    }
+  }
+]
