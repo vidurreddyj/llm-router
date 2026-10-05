@@ -1,19 +1,18 @@
 """
-Semantic cache: instead of exact-string matching, embed each query and
-return a cached response for any new query that's similar enough to one
-we've already answered. This is where a big chunk of real-world cost
-savings comes from, since production traffic is full of near-duplicate
-questions phrased slightly differently.
+Semantic cache for the LLM Router.
 
-This implementation uses TF-IDF + cosine similarity so it has zero
-external dependencies and zero latency cost -- good for a resume project
-and for understanding the mechanics. For production quality, swap
-`SemanticCache` to embed queries with a real embedding model (e.g.
-sentence-transformers or an embeddings API) and store vectors in a proper
-vector index (FAISS, Chroma, pgvector) instead of the in-memory matrix
-recomputed here.
+This module stores previous queries and their LLM responses.
+
+When a new query arrives, the semantic cache:
+    1. Converts the new query and stored queries into numerical vectors.
+    2. Uses TF-IDF to give more importance to meaningful words.
+    3. Uses cosine similarity to compare the new query with stored queries.
+    4. Finds the most similar stored query.
+    5. Returns the stored response if the similarity is above the threshold.
+
+This allows the router to reuse previous answers instead of making another
+LLM API call for queries that are sufficiently similar.
 """
-
 from dataclasses import dataclass
 from typing import Optional
 
@@ -24,6 +23,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 @dataclass
 class CacheEntry:
+    """
+    Represents one item stored in the semantic cache.
+
+        query: The original query that was sent to an LLM.
+        response: The response generated for that query.
+        model_used: The model that generated the response, such as "cheap" or "strong".
+    """
     query: str
     response: str
     model_used: str
@@ -31,45 +37,73 @@ class CacheEntry:
 
 class SemanticCache:
     """
-    NOTE on the vectorizer choice: an earlier version of this cache used
-    TfidfVectorizer re-fit on only the cached queries. That has a subtle
-    but serious bug -- if a new query contains a word never seen before
-    (out-of-vocabulary), that word is silently dropped from its vector
-    instead of being counted as "different." In testing, this made
-    "capital of Germany" register as a 0.91 similarity match against a
-    cached "capital of France" entry (the differentiating word just
-    vanished, leaving only shared stopwords). A HashingVectorizer with a
-    large fixed feature space avoids this: every word -- seen before or
-    not -- deterministically hashes into the same fixed-size vector space,
-    so new/unseen words still count as real signal that pulls similarity
-    down. This is also closer to how you'd want caching to behave in
-    production, where you can't keep re-fitting a vocabulary as traffic
-    grows.
+    Stores previous queries and responses and retrieves answers for
+    semantically similar future queries.
+
+    Queries are converted into numerical vectors using a HashingVectorizer
+    and TF-IDF. Cosine similarity is then used to determine how similar
+    a new query is to the queries already stored in the cache.
     """
 
     def __init__(self, similarity_threshold: float = 0.90, n_features: int = 2**14):
+        """
+        Initialize the semantic cache.
+
+        Args:
+            similarity_threshold: Minimum cosine similarity required for a stored query to count as a cache hit.
+
+            n_features: Number of dimensions used by the HashingVectorizer. The default is 2^14, or 16,384 dimensions.
+        """
         self.similarity_threshold = similarity_threshold
+        #self.entries is the in-memory storage for the actual cached queries and responses
         self.entries: list[CacheEntry] = []
         self._hasher = HashingVectorizer(
             n_features=n_features, alternate_sign=False, norm=None
         )
+
+        # Applies TF-IDF weighting to the hashed vectors.
+        # TF-IDF gives more importance to terms that are useful for
+        # distinguishing one query from other queries.
         self._tfidf = TfidfTransformer()
-        self._matrix = None  # fitted lazily once we have >=1 entry
+
+        #self._matrix (sparse matrix)stores their numerical vector representations for similarity searching.
+        self._matrix = None 
         self.hits = 0
         self.misses = 0
 
     def _vectorize_all(self):
+        """
+        Convert all currently cached queries into TF-IDF vectors.
+        This method is called whenever a new query is stored so that
+        self._matrix contains vector representations of every cached query.
+        """
         counts = self._hasher.transform([e.query for e in self.entries])
         self._matrix = self._tfidf.fit_transform(counts)
 
     def lookup(self, query: str) -> Optional[CacheEntry]:
+        """
+        Search the semantic cache for a query similar to the new query.
+
+        Args:
+            query: The new user query.
+
+        Returns:
+            The most similar CacheEntry if its similarity is greater than
+            or equal to the similarity threshold.
+
+            Returns None if no sufficiently similar query exists.
+        """
         if not self.entries:
             self.misses += 1
             return None
 
+        #vector form of the query
         vec = self._tfidf.transform(self._hasher.transform([query]))
+        #compares vec with queries in self._matrix . ex) sims = [0.94, 0.60, 0.15] . 0 becausewe dont want the whole list in list , #we want the list
         sims = cosine_similarity(vec, self._matrix)[0]
+        # Find the index of the cached query with the highest similarity.
         best_idx = int(sims.argmax())
+        # Get the actual similarity score of the best match.
         best_sim = float(sims[best_idx])
 
         if best_sim >= self.similarity_threshold:
@@ -80,10 +114,28 @@ class SemanticCache:
         return None
 
     def store(self, query: str, response: str, model_used: str):
+        """
+        Store a new query and its response in the semantic cache.
+
+        Args:
+            query: The query that was sent to the LLM.
+            response: The final response generated by the LLM.
+            model_used: The model that produced the final response.
+        """
         self.entries.append(CacheEntry(query, response, model_used))
         self._vectorize_all()
 
     def stats(self) -> dict:
+        """
+        Return statistics about semantic cache usage.
+
+        Returns:
+            A dictionary containing:
+                hits: Number of successful cache lookups.
+                misses: Number of unsuccessful cache lookups.
+                hit_rate: Fraction of lookups that resulted in a hit.
+                entries: Number of query/response pairs currently stored.
+        """
         total = self.hits + self.misses
         return {
             "hits": self.hits,
