@@ -1,10 +1,10 @@
-LLM Cost Router
+**LLM Cost Router**
 
 An LLM routing system that reduces the cost of answering prompts by deciding when a cheaper model is sufficient and when a stronger model is needed.
 
 The router combines semantic caching, heuristic complexity classification, and confidence-based escalation to avoid unnecessary calls to more expensive models.
 
-Running the Project
+**Running the Project**
 
 Install the dependencies:
 
@@ -22,7 +22,7 @@ python chat.py
 
 Enter queries directly in the terminal. Type exit to stop the program.
 
-Current Constraints
+**Current Constraints**
 
 Gemini Free Tier
 
@@ -42,8 +42,7 @@ The limit helps control response length and token usage, which is especially imp
 
 Very large questions may occasionally require more than this limit. The models are therefore prompted to provide complete but concise answers.
 
-Evaluation
-
+**Evaluation**
 The router can also be evaluated using the predefined queries in:
 
 eval/benchmark.jsonl
@@ -54,6 +53,6 @@ python -m eval.run_eval
 
 The evaluation compares different routing strategies and measures factors such as cost, latency, quality, cache usage, and model selection.
 
-Goal
+**Goal**
 
 The goal of the project is not simply to always use the cheapest model. Instead, it aims to use the least expensive option that can still provide an acceptable answer, while escalating difficult queries when necessary.
