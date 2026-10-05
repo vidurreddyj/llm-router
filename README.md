@@ -22,6 +22,39 @@ python chat.py
 
 Enter queries directly in the terminal. Type exit to stop the program.
 
+## Running the Evaluation
+
+The project includes a benchmark system for evaluating the router's performance. Test queries are stored in `eval/benchmark.jsonl`.
+
+### 1. Navigate to the project folder
+
+```powershell
+cd C:\Users\HP\Downloads\llm-router
+```
+
+### 2. Set your Gemini API key
+
+```powershell
+$env:GOOGLE_API_KEY="YOUR_API_KEY_HERE"
+```
+
+Replace `YOUR_API_KEY_HERE` with your Google Gemini API key.
+
+### 3. Run the evaluation
+
+```powershell
+python -m eval.run_eval
+```
+
+The evaluation reads the predefined queries from `benchmark.jsonl` and tests the router's performance.
+
+After the evaluation finishes, it generates:
+
+- `results.json` — stores the numerical evaluation results, including metrics such as cost, latency, quality, routing decisions, and cache performance.
+- `pareto.png` — visualizes the cost-versus-quality trade-off between the evaluated routing strategies.
+
+To test different queries, edit the queries in `eval/benchmark.jsonl` and run the evaluation again.
+
 **Current Constraints**
 
 Gemini Free Tier
