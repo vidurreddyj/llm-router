@@ -88,6 +88,7 @@ class LLMRouter:
         self.complexity_threshold = complexity_threshold
         self.confidence_threshold = confidence_threshold
         self.use_cache = use_cache
+        #Creates an instance of SemanticCache Class
         self.cache = SemanticCache(similarity_threshold=cache_similarity_threshold)
 
     def route(self, query: str) -> RouteTrace:

@@ -27,7 +27,9 @@ the router's behavior easier to configure.
 #               because the cheap model had low confidence.
 #
 #     judge  -> Used by the evaluation system to score the quality
-#               of generated responses.
+#               of generated responses.(used in eval)
+#     judge scores are estimates, not guaranteed measures of correctness
+#     cheap and strong models generate answers. Judge model evaluates how good those answers are during benchmarking.
 #
 # price_in_per_m:
 #     Cost in USD for one million input tokens.

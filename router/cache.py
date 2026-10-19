@@ -55,7 +55,7 @@ class SemanticCache:
             n_features: Number of dimensions used by the HashingVectorizer. The default is 2^14, or 16,384 dimensions.
         """
         self.similarity_threshold = similarity_threshold
-        #self.entries is the in-memory storage for the actual cached queries and responses
+        #self.entries is the in-memory storage for the actual cached queries and responses(text form)
         self.entries: list[CacheEntry] = []
         self._hasher = HashingVectorizer(
             n_features=n_features, alternate_sign=False, norm=None
@@ -75,7 +75,7 @@ class SemanticCache:
         """
         Convert all currently cached queries into TF-IDF vectors.
         This method is called whenever a new query is stored so that
-        self._matrix contains vector representations of every cached query.
+        self._matrix contains vector representations of every previous cached query.
         """
         counts = self._hasher.transform([e.query for e in self.entries])
         self._matrix = self._tfidf.fit_transform(counts)
@@ -97,7 +97,10 @@ class SemanticCache:
             self.misses += 1
             return None
 
-        #vector form of the query
+        #vector form of the NEW query
+        #HashingVectorizer runs on the new query only.
+        #TF-IDF transform() applies the existing IDF weights.
+        #The resulting vec is compared against cached queries.
         vec = self._tfidf.transform(self._hasher.transform([query]))
         #compares vec with queries in self._matrix . ex) sims = [0.94, 0.60, 0.15] . 0 becausewe dont want the whole list in list , #we want the list
         sims = cosine_similarity(vec, self._matrix)[0]
@@ -123,6 +126,8 @@ class SemanticCache:
             model_used: The model that produced the final response.
         """
         self.entries.append(CacheEntry(query, response, model_used))
+        #Why not just add the new vector? TF-IDF depends on how frequently words appear across all cached queries.
+        #When a new query is added, those frequencies can change. Therefore code recalculates the TF-IDF weights for every cached #query.
         self._vectorize_all()
 
     def stats(self) -> dict:

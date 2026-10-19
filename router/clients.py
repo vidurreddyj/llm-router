@@ -131,9 +131,7 @@ def _call_with_quota_retry(model_name: str, prompt: str, max_retries: int = 2):
             return _client.models.generate_content(
                 model=model_name,
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=config.MAX_TOKENS,
-                ),
+                config=types.GenerateContentConfig(max_output_tokens=config.MAX_TOKENS,),
             )
         except genai_errors.ClientError as e:
             is_last = attempt == max_retries
